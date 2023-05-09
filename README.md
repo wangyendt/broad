@@ -1,3 +1,55 @@
+# 3DoF验证实验使用方法
+
+### Step 1. 文件格式转换
+
+将BROAD数据集中的.hdf5文件转为.txt文件，方便c++处理
+
+```shell
+cd $proj_root/scripts
+pip install pywayne pandas numpy matplotlib
+python transfer_hdf5_to_txt.py
+```
+
+运行后，会在根目录/data_txt下生成若干.txt文件，方便c++读取。
+
+### Step 2. 批量运行3DoF算法
+
+先生成所需要用到的可执行文件：
+
+```bash
+#********************生成可执行文件********************
+cd $proj_root/src
+mkdir -p build
+cd build
+cmake ..
+make -j12
+#********************生成可执行文件********************
+```
+
+```bash
+#********************调用可执行文件********************
+cd $proj_root/scripts
+sh ./run_algorithms.sh
+#********************调用可执行文件********************
+```
+
+
+
+然后调用可执行文件，生成各种3dof算法的计算结果：
+
+```bash
+#********************调用可执行文件********************
+cd $proj_root/scripts
+sh ./run_algorithms.sh
+#********************调用可执行文件********************
+```
+
+### Step 3. TO BE ADDED
+
+
+
+
+
 # Berlin Robust Orientation Estimation Assessment Dataset (BROAD)
 
 This repository contains the data files and example code for the BROAD benchmark for inertial orientation estimation.
