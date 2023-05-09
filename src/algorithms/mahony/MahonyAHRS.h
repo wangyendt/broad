@@ -10,8 +10,8 @@
 // 02/10/2011	SOH Madgwick	Optimised for reduced CPU load
 //
 //=====================================================================================================
-#ifndef MahonyAHRS_h
-#define MahonyAHRS_h
+#ifndef MAHONY_AHRS_H
+#define MAHONY_AHRS_H
 
 #include "BaseAHRS.h"
 
@@ -29,9 +29,9 @@ class MahonyAHRS : public BaseAHRS {
 public:
     MahonyAHRS(float Kp, float Ki, float sampleFreq);
 
-    void update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+    void update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) override;
 
-    void update_imu(float gx, float gy, float gz, float ax, float ay, float az);
+    void update_imu(float gx, float gy, float gz, float ax, float ay, float az) override;
 
     float twoKp;                                    // 2 * proportional gain (Kp)
     float twoKi;                                    // 2 * integral gain (Ki)

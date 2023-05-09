@@ -10,8 +10,8 @@
 // 02/10/2011	SOH Madgwick	Optimised for reduced CPU load
 //
 //=====================================================================================================
-#ifndef MadgwickAHRS_h
-#define MadgwickAHRS_h
+#ifndef MADGWICK_AHRS_H
+#define MADGWICK_AHRS_H
 
 
 #include "BaseAHRS.h"
@@ -29,9 +29,9 @@ class MadgwickAHRS : public BaseAHRS {
 public:
     MadgwickAHRS(float beta, float sampleFreq);
 
-    void update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+    void update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) override;
 
-    void update_imu(float gx, float gy, float gz, float ax, float ay, float az);
+    void update_imu(float gx, float gy, float gz, float ax, float ay, float az) override;
 
     float beta;
 };

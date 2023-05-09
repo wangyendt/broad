@@ -3,4 +3,5 @@ __pycache__/
 .idea
 cmake-build-debug/
 data_txt/
-
+data_result/
+build/

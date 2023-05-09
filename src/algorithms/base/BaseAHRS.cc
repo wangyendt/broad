@@ -14,3 +14,11 @@ void BaseAHRS::get_orientation(float *quaternion) const {
 BaseAHRS::BaseAHRS(float frequency) : qw(1.0f), qx(0.0f), qy(0.0f), qz(0.0f) {
     this->frequency = frequency;
 }
+
+void BaseAHRS::update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+
+}
+
+void BaseAHRS::update_imu(float gx, float gy, float gz, float ax, float ay, float az) {
+
+}
