@@ -4,7 +4,14 @@
 
 #include "BaseAHRS.h"
 
-void BaseAHRS::get_orientation(float *quaternion) const {
+void BaseAHRS::get_orientation_6x(float *quaternion) {
+    quaternion[0] = qw;
+    quaternion[1] = qx;
+    quaternion[2] = qy;
+    quaternion[3] = qz;
+}
+
+void BaseAHRS::get_orientation_9x(float *quaternion) {
     quaternion[0] = qw;
     quaternion[1] = qx;
     quaternion[2] = qy;

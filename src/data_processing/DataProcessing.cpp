@@ -5,6 +5,7 @@
 #include "BaseAHRS.h"
 #include "MadgwickAHRS.h"
 #include "MahonyAHRS.h"
+#include "VqfAHRS.h"
 #include "DataProcessing.h"
 #include "SaveFileUtils.h"
 #include <iostream>
@@ -15,8 +16,8 @@
 #include <string>
 #include <unordered_map>
 
-DataProcessing::DataProcessing(std::string &file_path, std::string &method) :
-        file_path(file_path), method(method) {
+DataProcessing::DataProcessing(std::string &file_path, std::string &method, std::string &n_axis) :
+        file_path(file_path), method(method), n_axis(n_axis) {
 }
 
 std::vector<std::string> split(const std::string &s, char delimiter) {
@@ -58,21 +59,27 @@ void DataProcessing::process_data() {
     if (method == "madgwick") {
         ahrs = std::make_shared<MadgwickAHRS>(0.033f, 2000.0f / 7);
     } else if (method == "mahony") {
-        ahrs = std::make_shared<MahonyAHRS>(0.1, 0.1, 2000.0f / 7);
+        ahrs = std::make_shared<MahonyAHRS>(0.1f, 0.1f, 2000.0f / 7);
+    } else if (method == "vqf") {
+        ahrs = std::make_shared<VqfAHRS>(10.0f, 10.0f, 2000.0f / 7);
     }
     float quat_out[4];
     quat.clear();
     for (auto &d: data) {
-//        ahrs->update_imu(
-//                d["gyro_x"], d["gyro_y"], d["gyro_z"],
-//                d["acc_x"], d["acc_y"], d["acc_z"]
-//        );
-        ahrs->update_marg(
-                d["gyro_x"], d["gyro_y"], d["gyro_z"],
-                d["acc_x"], d["acc_y"], d["acc_z"],
-                d["mag_x"], d["mag_y"], d["mag_z"]
-        );
-        ahrs->get_orientation(quat_out);
+        if (n_axis == "6") {
+            ahrs->update_imu(
+                    d["gyro_x"], d["gyro_y"], d["gyro_z"],
+                    d["acc_x"], d["acc_y"], d["acc_z"]
+            );
+            ahrs->get_orientation_6x(quat_out);
+        } else if (n_axis == "9") {
+            ahrs->update_marg(
+                    d["gyro_x"], d["gyro_y"], d["gyro_z"],
+                    d["acc_x"], d["acc_y"], d["acc_z"],
+                    d["mag_x"], d["mag_y"], d["mag_z"]
+            );
+            ahrs->get_orientation_9x(quat_out);
+        }
         std::vector<float> quat_vec(quat_out, quat_out + sizeof(quat_out) / sizeof(quat_out[0]));
         quat.emplace_back(quat_vec);
     }

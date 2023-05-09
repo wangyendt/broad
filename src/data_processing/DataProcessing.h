@@ -11,7 +11,7 @@
 
 class DataProcessing {
 public:
-    explicit DataProcessing(std::string &file_path, std::string &method);
+    explicit DataProcessing(std::string &file_path, std::string &method, std::string &n_axis);
 
     void load_data();
 
@@ -22,6 +22,7 @@ public:
 private:
     std::string file_path;
     std::string method;
+    std::string n_axis;
     std::vector<std::string> header;
     std::vector<std::unordered_map<std::string, float>> data;
     std::vector<std::vector<float>> quat;

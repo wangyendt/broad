@@ -9,9 +9,15 @@
 class BaseAHRS {
 public:
     explicit BaseAHRS(float frequency);
-    void get_orientation(float *quaternion) const;
+
+    virtual void get_orientation_6x(float *quaternion);
+
+    virtual void get_orientation_9x(float *quaternion);
+
     virtual void update_marg(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+
     virtual void update_imu(float gx, float gy, float gz, float ax, float ay, float az);
+
     float qw, qx, qy, qz;
     float frequency;
 };
