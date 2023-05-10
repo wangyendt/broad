@@ -195,7 +195,11 @@ def getAveragedRmseValues(trialInfo, results):
     trials = {}
     for trialName in trialInfo['trials']:
         trials[trialName] = dict(
-            tagp_parameters={metric: results[metric][f'trial_{trialName}'].item()[tagpParamInd] for metric in metrics},
+            tagp_parameters={
+                metric:
+                    results[metric][f'trial_{trialName}'].item()[tagpParamInd] if tagpParamInd else
+                    results[metric][f'trial_{trialName}'].item() for metric in metrics
+            },
             minimum_value={metric: np.min(results[metric][f'trial_{trialName}'].item()) for metric in metrics},
         )
 
