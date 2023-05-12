@@ -24,6 +24,60 @@ pyximport.install()
 # the .pyxbld file. This will require a C++ compiler to be available.
 from madgwick_mahony import MadgwickAHRS, MahonyAHRS
 from vqf import VQF
+from pywayne.tools import *
+
+
+def show_rawdata():
+    files = list_all_files('../data_mat', ['.mat'])
+
+    def contiguous_regions(condition):
+        d = np.diff(condition)
+        idx, = d.nonzero()
+        idx += 1
+        if condition[0]:
+            idx = np.r_[0, idx]
+        if condition[-1]:
+            idx = np.r_[idx, condition.size]
+        idx.shape = (-1, 2)
+        return idx
+
+    for i, file in enumerate(files):
+        data = spio.loadmat(file)
+        for k in ('imu_gyr', 'imu_acc', 'imu_mag'):  # ensure the IMU data is stored in C order
+            data[k] = np.ascontiguousarray(data[k])
+        acc = data['imu_acc']
+        gyr = data['imu_gyr']
+        mag = data['imu_mag']
+        sampling_rate = data['sampling_rate']
+        movement = data['movement'].squeeze()
+        contiguous_indices = contiguous_regions(movement == 1)
+
+        fig, ax = plt.subplots(3, 1, sharex='all')
+        ts = np.arange(0, len(acc)).reshape((-1, 1)) / sampling_rate
+        ax[0].plot(ts, acc)
+        ax[0].plot(ts, movement * (acc.max() - acc.min()) + acc.min())
+        ax[0].legend(('$acc_x$', '$acc_y$', '$acc_z$', 'movement'))
+        for start, end in contiguous_indices:
+            ax[0].fill_between(ts[start:end + 1].squeeze(), acc.min(), acc.max(), color='red', alpha=0.2)
+        ax[0].set_ylabel('$m/s^2$')
+        ax[0].set_title('acc')
+        ax[1].plot(ts, gyr)
+        ax[1].plot(ts, movement * (gyr.max() - gyr.min()) + gyr.min())
+        for start, end in contiguous_indices:
+            ax[1].fill_between(ts[start:end + 1].squeeze(), gyr.min(), gyr.max(), color='red', alpha=0.2)
+        ax[1].set_ylabel('$rad/s$')
+        ax[1].set_title('gyro')
+        ax[1].legend(('$gyr_x$', '$gyr_y$', '$gyr_z$', 'movement'))
+        ax[2].plot(ts, mag)
+        ax[2].plot(ts, movement * (mag.max() - mag.min()) + mag.min())
+        ax[2].set_xlabel('Time (s)')
+        for start, end in contiguous_indices:
+            ax[2].fill_between(ts[start:end + 1].squeeze(), mag.min(), mag.max(), color='red', alpha=0.2)
+        ax[2].set_ylabel('$\mu T$')
+        ax[2].set_title('mag')
+        ax[2].legend(('$mag_x$', '$mag_y$', '$mag_z$', 'movement'))
+        plt.tight_layout()
+    plt.show()
 
 
 def runMadgwick(data, beta):
@@ -165,6 +219,8 @@ def main():
     dataPath = basePath / '..' / 'data_mat'
     outPath = basePath / 'out'
     outPath.mkdir(exist_ok=True)
+
+    # show_rawdata()
 
     with open(dataPath / 'trials.json') as f:
         trialInfo = json.load(f)
