@@ -1,5 +1,6 @@
 __pycache__/
 /example_code/venv/
+/example_code/out/
 .idea
 cmake-build-debug/
 data_txt/
