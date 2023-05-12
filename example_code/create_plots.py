@@ -21,38 +21,38 @@ def paramErrorLinePlot(ax, trialNames, results):
     err_incl = getMeanError(results, trialNames, 'inclination_rmse_deg')
     err_heading = getMeanError(results, trialNames, 'heading_rmse_deg')
     err_total = getMeanError(results, trialNames, 'total_rmse_deg')
+    min_cost = min(err_total.min(), err_heading.min(), err_incl.min())
+    max_cost = max(err_total.max(), err_heading.max(), err_incl.max())
 
     def mark(x, y, col, offsetX, offsetY, tagp):
-        ax.plot(x, y, col+'o', markersize=4)
+        ax.plot(x, y, col + 'o', markersize=4)
         ax.plot([0, x], [y, y], col, lw=1)
         ax.plot([x, x], [0, y], col, lw=1)
         text = f'$\\beta={x}$'
         if tagp:
             text = f'$\\mathrm{{TAGP}}={y:.2f}^\\circ$\n' + text
-        ax.text(x+offsetX, y+offsetY, text, color=col, ha='left', va='top', size=8)
+        ax.text(x + offsetX, y + offsetY, text, color=col, ha='left', va='top', size=8)
 
     def plot(vals, y, col, label, offsetX, offsetY, tagp=False):
-        ax.plot(vals, y, col,  label=label, zorder=100)
+        ax.plot(vals, y, col, label=label, zorder=100)
         mark(vals[np.argmin(y)], np.min(y), col, offsetX, offsetY, tagp)
 
-    plot(vals, err_total, 'C0', '$e$', -0.038, 1.45, tagp=True)
-    plot(vals, err_heading, 'C1', '$e_\\mathrm{h}$', -0.02, 0.8)
-    plot(vals, err_incl, 'C2', '$e_\\mathrm{i}$', -0.02, 0.8)
+    plot(vals, err_total, 'C0', '$e$', 0, (max_cost - min_cost) * 0.10, tagp=True)
+    plot(vals, err_heading, 'C1', '$e_\\mathrm{h}$', 0, (max_cost - min_cost) * 0.06)
+    plot(vals, err_incl, 'C2', '$e_\\mathrm{i}$', 0, (max_cost - min_cost) * 0.06)
 
-    ax.legend()
+    ax.legend(loc='upper right')
 
     ax.grid()
     ax.set_xlabel('algorithm parameter (gain $\\beta$)')
     ax.set_ylabel('RMSE averaged over all trials [°]')
-    ax.set_ylim(0, 8)
+    ax.set_ylim(0.8 * min_cost, 1.2 * max_cost)
     ax.set_xlim(min(vals), max(vals))
 
 
-def contourPlot(ax, trialNames, results):
-    paramX = 'Kp'
-    paramY = 'Ki'
-    minLevel = 0.0
-    maxLevel = 12.0
+def contourPlot(ax, trialNames, results, **kwargs):
+    paramX = kwargs['paramX']
+    paramY = kwargs['paramY']
 
     assert paramX in results['params']
     assert paramY in results['params']
@@ -65,11 +65,12 @@ def contourPlot(ax, trialNames, results):
 
     cost = getMeanError(results, trialNames, 'total_rmse_deg')
     tagpParams, tagpParamInd = getTagpParams(results)
+    minLevel, maxLevel = cost.max() * 0.3, cost.max()
 
     h = ax.contourf(valX, valY, cost.T, levels=np.linspace(minLevel, maxLevel, 101), origin='lower', cmap=cm.jet)
     ax.contour(h, levels=h.levels[6::10], origin='lower', colors='0.5', linewidths=0.5)
     cbar = plt.colorbar(h, ax=ax)
-    cbar.set_ticks([0, 2, 4, 6, 8, 10, 12])
+    cbar.set_ticks(np.linspace(minLevel, maxLevel, 7))
     cbar.set_label('RMSE averaged over all trials [°]')
 
     # manually generate grid at actual search locations
@@ -79,24 +80,24 @@ def contourPlot(ax, trialNames, results):
         ax.axhline(v, color='k', alpha=0.1, lw=0.2)
 
     ax.plot(tagpParams[paramX], tagpParams[paramY], 'C1o', markersize=4)
-    ax.text(tagpParams[paramX]-0.2, tagpParams[paramY]+0.0001,
+    ax.text(tagpParams[paramX] - 0.2, tagpParams[paramY] + 0.0001,
             f'$\\mathrm{{TAGP}}={np.min(cost):.2f}^\\circ$\n'
             f'$K_\\mathrm{{p}}={tagpParams[paramX]}$\n$K_\\mathrm{{i}}={tagpParams[paramY]}$', size=8)
 
     ax.set_xlabel('first parameter (gain $K_\\mathrm{p}$)')
     ax.set_ylabel('second parameter (bias est. gain $K_\\mathrm{i}$)')
-    ax.set_yticks([0.0, 0.001, 0.002, 0.003, 0.004])
+    ax.set_yticks(np.linspace(valY.min(), valY.max(), 5))
 
 
 def createParameterErrorPlot(fig, trialInfo, results):
     axes = fig.subplots(1, 2)
 
     trialNames = trialInfo['trials'].keys()
-    paramErrorLinePlot(axes[0], trialNames, results['madgwick'])
-    contourPlot(axes[1], trialNames, results['mahony'])
+    paramErrorLinePlot(axes[0], trialNames, results[algorithmA])
+    contourPlot(axes[1], trialNames, results[algorithmB], **paramsB)
 
-    axes[0].set_title('(a) Algorithm A')
-    axes[1].set_title('(b) Algorithm B')
+    axes[0].set_title(f'(a) {algorithmA}')
+    axes[1].set_title(f'(b) {algorithmB}')
 
     fig.tight_layout()
 
@@ -127,7 +128,7 @@ def extractTreeInfo(trialInfo):
     return np.array(y, float), np.array(levels, int), labels
 
 
-def createTree(fig, ax, y, levels, xPos=-16/72, step=6/72, lw=0.75, markersize=2, trans=None):
+def createTree(fig, ax, y, levels, xPos=-16 / 72, step=6 / 72, lw=0.75, markersize=2, trans=None):
     if trans is None:
         # creates a transformation that uses inches for the x coordinate and data coordinates for the y axis.
         # as 1 inch equals 1/72 point, with the default parameters, the tree levels are rendered at -16, -10 and -4
@@ -142,14 +143,14 @@ def createTree(fig, ax, y, levels, xPos=-16/72, step=6/72, lw=0.75, markersize=2
         if levels[i] <= levels[0]:
             break
         if levels[i] == levels[0] + 1:
-            createTree(fig, ax, y[i:], levels[i:], xPos+step, step, lw, markersize, trans)
+            createTree(fig, ax, y[i:], levels[i:], xPos + step, step, lw, markersize, trans)
             downPos = y[i]
 
     if downPos is not None:
-        ax.plot([xPos, xPos], [y[0], downPos], 'k', lw=lw,  clip_on=False, transform=trans)
+        ax.plot([xPos, xPos], [y[0], downPos], 'k', lw=lw, clip_on=False, transform=trans)
 
     if levels[0] != 0:
-        ax.plot([xPos-step, xPos], [y[0], y[0]], 'k', lw=lw, clip_on=False, transform=trans)
+        ax.plot([xPos - step, xPos], [y[0], y[0]], 'k', lw=lw, clip_on=False, transform=trans)
 
 
 def createGroupBarPlot(fig, trialInfo, results):
@@ -158,8 +159,8 @@ def createGroupBarPlot(fig, trialInfo, results):
 
     axes = fig.subplots(1, 2, sharey=True)
 
-    avgRmseA = getAveragedRmseValues(trialInfo, results['madgwick'])
-    avgRmseB = getAveragedRmseValues(trialInfo, results['mahony'])
+    avgRmseA = getAveragedRmseValues(trialInfo, results[algorithmA])
+    avgRmseB = getAveragedRmseValues(trialInfo, results[algorithmB])
 
     # combine error values for all groups into one numpy array for easy plotting
     params = ['tagp_parameters', 'minimum_value']
@@ -226,9 +227,9 @@ def createGroupBarPlot(fig, trialInfo, results):
 
     # stem comparsion plot
     for metric, col, shiftVal, lineArgs, markerArgs in (
-        ['total_rmse_deg', 'C0', 0, dict(lw=2), dict(markersize=4)],
-        ['inclination_rmse_deg', 'C2', -shift, dict(lw=1, alpha=0.8), dict(markersize=2, alpha=0.8)],
-        ['heading_rmse_deg', 'C1', shift, dict(lw=1, alpha=0.8), dict(markersize=2, alpha=0.8)]):
+            ['total_rmse_deg', 'C0', 0, dict(lw=2), dict(markersize=4)],
+            ['inclination_rmse_deg', 'C2', -shift, dict(lw=1, alpha=0.8), dict(markersize=2, alpha=0.8)],
+            ['heading_rmse_deg', 'C1', shift, dict(lw=1, alpha=0.8), dict(markersize=2, alpha=0.8)]):
         valA = resA['tagp_parameters'][metric]
         valB = resB['tagp_parameters'][metric]
         indA = valA < valB
@@ -258,8 +259,8 @@ def createGroupBarPlot(fig, trialInfo, results):
             ax.text(val, y[i] - 1.5 * shift, text, ha='left' if ax == axes[0] else 'right', va='bottom', color='k',
                     size=size)
 
-    axes[0].set_title('Algorithm A')
-    axes[1].set_title('Algorithm B')
+    axes[0].set_title(f'{algorithmA}')
+    axes[1].set_title(f'{algorithmB}')
     axes[0].set_xlabel('RMSE averaged over group of trials [°]', x=1)
 
     legend = axes[1].legend(loc='upper left', fontsize=7)
@@ -287,10 +288,10 @@ def main():
     with open(dataPath / 'trials.json') as f:
         trialInfo = json.load(f)
 
-    results = dict(
-        madgwick=loadResults(outPath / 'results_madgwick.mat'),
-        mahony=loadResults(outPath / 'results_mahony.mat'),
-    )
+    results = {
+        algorithmA: loadResults(outPath / f'results_{algorithmA}.mat'),
+        algorithmB: loadResults(outPath / f'results_{algorithmB}.mat')
+    }
 
     # create first plot
     fig = plt.figure(figsize=(6.5, 3))
@@ -310,4 +311,8 @@ def main():
 
 
 if __name__ == '__main__':
+    algorithmA = 'madgwick'
+    algorithmB = 'vqf'
+    # paramsB = {'paramX': 'Kp', 'paramY': 'Ki'}
+    paramsB = {'paramX': 'tau_acc', 'paramY': 'tau_mag'}
     main()

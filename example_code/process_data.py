@@ -23,6 +23,7 @@ pyximport.install()
 # The orientation estimation algorithms are implemented in C++ and will automatically be compiled using pyximport and
 # the .pyxbld file. This will require a C++ compiler to be available.
 from madgwick_mahony import MadgwickAHRS, MahonyAHRS
+from vqf import VQF
 
 
 def runMadgwick(data, beta):
@@ -34,7 +35,7 @@ def runMadgwick(data, beta):
     obj = MadgwickAHRS(beta, sampling_rate)
     obj.setState(quatFromAccMag(acc[0], mag[0]))  # set initial state based on the first sample
     quat = obj.updateBatch(gyr, acc, mag)  # run the orientation estimation algorithm
-    quat = quatmult(np.array([1/np.sqrt(2), 0, 0, 1/np.sqrt(2)], float), quat)  # make sure earth frame is ENU
+    quat = quatmult(np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], float), quat)  # make sure earth frame is ENU
     return quat
 
 
@@ -47,7 +48,20 @@ def runMahony(data, Kp, Ki):
     obj = MahonyAHRS(Kp, Ki, sampling_rate)
     obj.setState(quatFromAccMag(acc[0], mag[0]))  # set initial state based on the first sample
     quat, _ = obj.updateBatch(gyr, acc, mag)  # run the orientation estimation algorithm
-    quat = quatmult(np.array([1/np.sqrt(2), 0, 0, 1/np.sqrt(2)], float), quat)  # make sure earth frame is ENU
+    quat = quatmult(np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], float), quat)  # make sure earth frame is ENU
+    return quat
+
+
+def runVqf(data, tau_acc, tau_mag):
+    acc = data['imu_acc']
+    gyr = data['imu_gyr']
+    mag = data['imu_mag']
+    sampling_rate = data['sampling_rate']
+
+    obj = VQF(1 / sampling_rate, 1 / sampling_rate)
+    obj.setTauAcc(tau_acc)
+    obj.setTauMag(tau_mag)
+    quat = obj.updateBatch(gyr, acc, mag)['quat9D']
     return quat
 
 
@@ -167,6 +181,13 @@ def main():
     }
     run(dataPath, outPath, trialInfo['trials'], 'mahony', runMahony, mahonyParams, args.jobs, args.force)
     createAverageRmseJson(outPath, trialInfo, 'mahony')
+
+    vqfParams = {
+        'tau_acc': np.round(np.arange(1, 5.000001, 0.2), 8),
+        'tau_mag': np.round(np.arange(15, 19.000001, 0.2), 8),
+    }
+    run(dataPath, outPath, trialInfo['trials'], 'vqf', runVqf, vqfParams, args.jobs, args.force)
+    createAverageRmseJson(outPath, trialInfo, 'vqf')
 
 
 if __name__ == '__main__':
