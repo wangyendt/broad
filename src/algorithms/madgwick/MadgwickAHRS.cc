@@ -107,8 +107,8 @@ void MadgwickAHRS::update_marg(float gx, float gy, float gz, float ax, float ay,
         hy = _2q0mx * qz + my * q0q0 - _2q0mz * qx + _2q1mx * qy - my * q1q1 + my * q2q2 + _2q2 * mz * qz - my * q3q3;
         bx = sqrtf(hx * hx + hy * hy);
         bz = -_2q0mx * qy + _2q0my * qx + mz * q0q0 + _2q1mx * qz - mz * q1q1 + _2q2 * my * qz - mz * q2q2 + mz * q3q3;
-        _2bx = bx;
-        _2bz = bz;
+        _2bx = 2.0f * bx;
+        _2bz = 2.0f * bz;
         _4bx = 2.0f * _2bx;
         _4bz = 2.0f * _2bz;
 
